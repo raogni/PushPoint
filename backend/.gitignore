@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment variables (NEVER COMMIT THIS!)
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.db-journal
+dev.db
+prisma/dev.db
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo

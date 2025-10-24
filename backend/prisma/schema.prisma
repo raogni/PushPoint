@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum TimeOffType {
+  VACATION
+  SICK
+  PERSONAL
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole    @default(EMPLOYEE)
+  status        UserStatus  @default(ACTIVE)
+  pin           String?     @unique
+  pinChangedAt  DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  shifts                Shift[]
+  timeEntries           TimeEntry[]
+  timeOffRequests       TimeOffRequest[]
+  shiftChangeRequests   ShiftChangeRequest[]
+  notifications         Notification[]
+  createdShifts         Shift[] @relation("ShiftCreator")
+  reviewedTimeOff       TimeOffRequest[] @relation("TimeOffReviewer")
+  reviewedShiftChanges  ShiftChangeRequest[] @relation("ShiftChangeReviewer")
+
+  @@map("users")
+}
+
+model Shift {
+  id          String       @id @default(uuid())
+  userId      String
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  position    String?
+  status      ShiftStatus  @default(SCHEDULED)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdBy           User                 @relation("ShiftCreator", fields: [createdById], references: [id])
+  timeEntries         TimeEntry[]
+  shiftChangeRequests ShiftChangeRequest[]
+
+  @@map("shifts")
+}
+
+model TimeEntry {
+  id               String    @id @default(uuid())
+  userId           String
+  shiftId          String
+  clockInTime      DateTime
+  clockOutTime     DateTime?
+  tabletId         String?
+  tabletLocation   String?
+  totalHours       Float?
+  manualEntry      Boolean   @default(false)
+  manualEntryBy    String?
+  manualEntryNote  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model TimeOffRequest {
+  id            String        @id @default(uuid())
+  userId        String
+  startDate     DateTime
+  endDate       DateTime
+  type          TimeOffType
+  reason        String?
+  status        RequestStatus @default(PENDING)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  managerNotes  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("TimeOffReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("time_off_requests")
+}
+
+model ShiftChangeRequest {
+  id                   String        @id @default(uuid())
+  userId               String
+  originalShiftId      String
+  requestedStartTime   DateTime
+  requestedEndTime     DateTime
+  reason               String?
+  status               RequestStatus @default(PENDING)
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  managerNotes         String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  // Relations
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalShift Shift  @relation(fields: [originalShiftId], references: [id], onDelete: Cascade)
+  reviewer      User?  @relation("ShiftChangeReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("shift_change_requests")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
