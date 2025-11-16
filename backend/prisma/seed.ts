@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -39,7 +39,7 @@ async function main() {
   console.log('✅ Created manager user');
 
   // Create 5 Employee Users
-  const employees = [];
+  const employees: User[] = [];
   const employeeData = [
     { email: 'john.doe@pushpoint.com', firstName: 'John', lastName: 'Doe', pin: '1111' },
     { email: 'jane.smith@pushpoint.com', firstName: 'Jane', lastName: 'Smith', pin: '2222' },
